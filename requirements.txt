@@ -13,3 +13,5 @@ reportlab==4.0.7
 
 # Utilidades
 Werkzeug==3.0.1
+gunicorn==21.2.0
+pymysql==1.1.0
