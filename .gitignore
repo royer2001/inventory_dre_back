@@ -1,0 +1,63 @@
+# --- Archivos del entorno virtual ---
+venv/
+env/
+.venv/
+.env/              # Variables de entorno (API keys, credenciales, etc.)
+*.env
+
+# --- Archivos de configuración sensibles ---
+config.pyc
+instance/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.pkl
+*.log
+
+# --- Archivos de base de datos locales ---
+*.sqlite3
+*.db
+*.sqlite
+migrations/
+
+# --- Archivos de caché ---
+*.cache
+.cache/
+.pytest_cache/
+*.spec
+*.egg-info/
+dist/
+build/
+
+# --- Archivos del editor/IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Archivos del sistema ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Archivos temporales ---
+tmp/
+temp/
+*.bak
+*.tmp
+
+# --- Archivos de dependencias ---
+__pycache__/
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+.wheels/
+
+# --- Archivos de Flask específicos ---
+instance/
+flask_session/
+uploads/
+static/uploads/

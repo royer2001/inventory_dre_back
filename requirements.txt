@@ -1,0 +1,15 @@
+# Flask y dependencias web
+Flask==3.0.0
+flask-cors==4.0.0
+python-dotenv==1.0.0
+
+# Base de datos
+openpyxl==3.1.2
+
+# Generación de códigos de barras
+python-barcode==0.15.1
+Pillow==10.1.0
+reportlab==4.0.7
+
+# Utilidades
+Werkzeug==3.0.1
