@@ -14,7 +14,7 @@ app = Flask(__name__)
 app.url_map.strict_slashes = False
 
 
-CORS(app, origins=["http://localhost:5173", "https://benevolent-pudding-a44fae.netlify.app/"])
+CORS(app, origins=["http://localhost:5173", "https://benevolent-pudding-a44fae.netlify.app"])
 
 app.register_blueprint(auth_bp, url_prefix="/auth")
 app.register_blueprint(bien_bp, url_prefix="/bienes")
