@@ -55,6 +55,19 @@ class UserModel:
         return user
 
     @staticmethod
+    def find_by_id_with_password(user_id):
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, contrasena, nombre, rol_id, dni, activo 
+                FROM usuarios 
+                WHERE id = %s
+            """, (user_id,))
+            user = cursor.fetchone()
+        conn.close()
+        return user
+
+    @staticmethod
     def create(data):
         conn = get_connection()
         try:

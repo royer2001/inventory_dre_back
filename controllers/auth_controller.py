@@ -65,3 +65,57 @@ class AuthController:
             data["nombre"], data["dni"], data["contrasena"], data["rol_id"]
         )
         return jsonify({"message": "Usuario registrado exitosamente"}), 201
+
+    @staticmethod
+    def change_password():
+        try:
+            # 1. Verify Token
+            auth_header = request.headers.get("Authorization")
+            if not auth_header or not auth_header.startswith("Bearer "):
+                return jsonify({"message": "Token es requerido"}), 400
+
+            token = auth_header.split(" ")[1]
+            payload = JWTService.verify_token(token)
+            if not payload:
+                return jsonify({"message": "Token inválido"}), 401
+
+            user_id = payload["id"]
+
+            # 2. Get Data
+            data = request.get_json()
+            current_password = data.get('current_password')
+            new_password = data.get('new_password')
+
+            if not current_password or not new_password:
+                return jsonify({"message": "Faltan datos requeridos"}), 400
+
+            # 3. Get User with Password
+            user = UserModel.find_by_id_with_password(user_id)
+            if not user:
+                return jsonify({"message": "Usuario no encontrado"}), 404
+
+            # 4. Verify Current Password
+            # Note: user["contrasena"] is likely a string from the DB, but bcrypt needs bytes.
+            # The DB might store it as a string (varchar).
+            # bcrypt.checkpw(password, hashed_password)
+            # password must be bytes. hashed_password must be bytes.
+            
+            stored_hash = user["contrasena"]
+            if isinstance(stored_hash, str):
+                stored_hash = stored_hash.encode('utf-8')
+            
+            if not bcrypt.checkpw(current_password.encode('utf-8'), stored_hash):
+                return jsonify({"message": "La contraseña actual es incorrecta"}), 401
+
+            # 5. Update Password
+            # UserModel.update handles hashing if 'contrasena' is passed
+            updated = UserModel.update(user_id, {"contrasena": new_password})
+            
+            if updated:
+                return jsonify({"message": "Contraseña actualizada correctamente"}), 200
+            else:
+                return jsonify({"message": "Error al actualizar la contraseña"}), 500
+
+        except Exception as e:
+            print("Error en change_password:", e)
+            return jsonify({"message": "Error interno en el servidor"}), 500
