@@ -13,14 +13,16 @@ class BienModel:
                 SELECT 
                     b.*,
                     c.nombre AS categoria_nombre,
+                    u.nombre AS inventariador_nombre,
                     (SELECT m.responsable FROM movimientos m WHERE m.bien_id = b.id ORDER BY m.fecha DESC, m.id DESC LIMIT 1) AS responsable_nombre,
                     b.estado AS estado_nombre,
                     (SELECT m.ubicacion_actual FROM movimientos m WHERE m.bien_id = b.id ORDER BY m.fecha DESC, m.id DESC LIMIT 1) AS ubicacion_nombre
                 FROM bienes b
                 LEFT JOIN categorias c 
                     ON b.categoria_id = c.id
-                WHERE b.deleted_at IS NULL
-                AND b.updated_at IS NULL;
+                LEFT JOIN usuarios u
+                    ON b.inventariador_id = u.id
+                WHERE b.deleted_at IS NULL;
                 ''')
             result = cursor.fetchall()
         conn.close()
@@ -37,8 +39,7 @@ class BienModel:
                     SUM(CASE WHEN estado = 'REGULAR' THEN 1 ELSE 0 END) as regulares,
                     SUM(CASE WHEN estado = 'MALO' THEN 1 ELSE 0 END) as malos
                 FROM bienes
-                WHERE deleted_at IS NULL 
-                AND updated_at IS NULL
+                WHERE deleted_at IS NULL
             """)
             result = cursor.fetchone()
         conn.close()
@@ -56,7 +57,7 @@ class BienModel:
         offset = (page - 1) * per_page
         conn = get_connection()
         
-        where_clauses = ["b.deleted_at IS NULL", "b.updated_at IS NULL"]
+        where_clauses = ["b.deleted_at IS NULL"]
         params = []
 
         if filters:
@@ -91,12 +92,15 @@ class BienModel:
                 SELECT 
                     b.*,
                     c.nombre AS categoria_nombre,
+                    u.nombre AS inventariador_nombre,
                     (SELECT m.responsable FROM movimientos m WHERE m.bien_id = b.id ORDER BY m.fecha DESC, m.id DESC LIMIT 1) AS responsable_nombre,
                     b.estado AS estado_nombre,
                     (SELECT m.ubicacion_actual FROM movimientos m WHERE m.bien_id = b.id ORDER BY m.fecha DESC, m.id DESC LIMIT 1) AS ubicacion_nombre
                 FROM bienes b
                 LEFT JOIN categorias c 
                     ON b.categoria_id = c.id
+                LEFT JOIN usuarios u
+                    ON b.inventariador_id = u.id
                 WHERE {where_str}
                 LIMIT %s OFFSET %s;
             """
@@ -233,12 +237,13 @@ class BienModel:
                 # Registrar movimiento inicial
                 responsable_nombre = data.get("responsable")
                 ubicacion_nombre = data.get("ubicacion")
+                estado_bien = data.get("estado", "BUENO")
 
                 query_mov = """
                     INSERT INTO movimientos (
                         bien_id, tipo, fecha, ubicacion_actual, responsable, 
-                        modalidad_responsable, inventariador_id, observaciones
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        modalidad_responsable, inventariador_id, observaciones, estado
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 
                 fecha_mov = data.get("fecha_asignacion")
@@ -253,7 +258,8 @@ class BienModel:
                     responsable_nombre,
                     data.get("modalidad"),
                     data.get("inventariador_id"),
-                    data.get("observacion")
+                    data.get("observacion"),
+                    estado_bien
                 )
                 cursor.execute(query_mov, values_mov)
 
@@ -277,8 +283,18 @@ class BienModel:
             current_bien = BienModel.get_by_id(id)
             if not current_bien:
                 return {"success": False, "message": "Bien no encontrado"}
+            
+            # 2. Validar que categoria_id existe si se proporciona
+            categoria_id = data.get("categoria_id")
+            if categoria_id:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT id FROM categorias WHERE id = %s", (categoria_id,))
+                    if not cursor.fetchone():
+                        # Si la categoría no existe, establecer como None
+                        data["categoria_id"] = None
+                        print(f"⚠️ categoria_id {categoria_id} no existe, se establecerá como NULL")
 
-            # 2. Definir campos inmutables que NO se deben actualizar vía este endpoint
+            # 3. Definir campos inmutables que NO se deben actualizar vía este endpoint
             # Si se intenta cambiarlos, se ignoran silenciosamente o se podría lanzar error
             immutable_fields = ['codigo_patrimonio', 'codigo_interno', 'tipo_origen', 'codigo_completo']
             
@@ -296,7 +312,7 @@ class BienModel:
                 print(f"ℹ️ AUDITORÍA - Intento de actualización sin cambios efectivos para Bien ID {id}")
 
             with conn.cursor() as cursor:
-                # 3. Query de actualización EXCLUYENDO campos inmutables
+                # 4. Query de actualización EXCLUYENDO campos inmutables
                 # Nota: codigo_completo, codigo_patrimonio, etc. NO están en el SET
                 query = """
                     UPDATE bienes SET
@@ -353,17 +369,13 @@ class BienModel:
 
             conn.close()
             
-            # 4. Retornar el objeto actualizado
+            # 5. Retornar el objeto actualizado
             updated_bien = BienModel.get_by_id(id)
             return {"success": True, "message": "Bien actualizado correctamente", "data": updated_bien}
 
         except Exception as e:
             print(f"❌ Error al actualizar bien: {e}")
             return {"success": False, "error": str(e)}
-
-        except Exception as e:
-            print(f"❌ Error al actualizar bien: {e}")
-            return False
 
     @staticmethod
     def destroy(id):
@@ -381,7 +393,7 @@ class BienModel:
     def get_for_report(filters):
         conn = get_connection()
         
-        where_clauses = ["b.deleted_at IS NULL", "b.updated_at IS NULL"]
+        where_clauses = ["b.deleted_at IS NULL"]
         params = []
 
         if filters.get('responsable'):

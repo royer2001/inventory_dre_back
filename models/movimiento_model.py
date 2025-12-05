@@ -12,7 +12,8 @@ class MovimientoModel:
                 '''
                 SELECT 
                     m.*,
-                    u.nombre as inventariador_nombre
+                    u.nombre as inventariador_nombre,
+                    m.estado as estado_movimiento
                 FROM movimientos m
                 LEFT JOIN usuarios u ON m.inventariador_id = u.id
                 ORDER BY m.fecha DESC, m.id DESC
@@ -30,10 +31,9 @@ class MovimientoModel:
                 SELECT 
                     m.*,
                     u.nombre as inventariador_nombre,
-                    b.estado as estado_bien_actual
+                    m.estado as estado_movimiento
                 FROM movimientos m
                 LEFT JOIN usuarios u ON m.inventariador_id = u.id
-                LEFT JOIN bienes b ON m.bien_id = b.id
                 WHERE m.bien_id = %s
                 ORDER BY m.created_at ASC
                 ''', (id,))
@@ -50,7 +50,8 @@ class MovimientoModel:
                 '''
                 SELECT 
                     m.*,
-                    u.nombre as inventariador_nombre
+                    u.nombre as inventariador_nombre,
+                    m.estado as estado_movimiento
                 FROM movimientos m
                 LEFT JOIN usuarios u ON m.inventariador_id = u.id
                 WHERE m.bien_id = %s
@@ -71,6 +72,7 @@ class MovimientoModel:
                     m.tipo as accion,
                     m.responsable as usuario,
                     m.fecha,
+                    m.estado as estado_movimiento,
                     'Completado' as status
                 FROM movimientos m
                 JOIN bienes b ON m.bien_id = b.id
@@ -78,9 +80,6 @@ class MovimientoModel:
                 LIMIT %s
                 ''', (limit,))
             result = cursor.fetchall()
-        conn.close()
-        return result
-
         conn.close()
         return result
 
@@ -123,10 +122,11 @@ class MovimientoModel:
                         modalidad_responsable,
                         inventariador_id,
                         documento_id,
-                        observaciones
+                        observaciones,
+                        estado
                     )
                     VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     );
                 """
 
@@ -148,7 +148,8 @@ class MovimientoModel:
                     data.get("modalidad_responsable") or data.get("modalidad_responsable_nuevo") or data.get("modalidad"),
                     inventariador_id,
                     documento_id,
-                    data.get("observaciones")
+                    data.get("observaciones"),
+                    data.get("estado")
                 )
 
                 cursor.execute(query, values)
@@ -178,7 +179,8 @@ class MovimientoModel:
                         modalidad_responsable = %s,
                         inventariador_id = %s,
                         documento_id = %s,
-                        observaciones = %s
+                        observaciones = %s,
+                        estado = %s
                     WHERE id = %s
                 """
                 
@@ -199,6 +201,7 @@ class MovimientoModel:
                     inventariador_id,
                     documento_id,
                     data.get("observaciones"),
+                    data.get("estado"),
                     id
                 )
 
