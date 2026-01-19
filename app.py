@@ -6,6 +6,7 @@ from routes.usuario_routes import usuario_bp
 from routes.reporte_routes import reporte_bp
 from routes.barcode_routes import barcode_bp
 from routes.categoria_routes import categoria_bp
+from routes.responsable_routes import responsable_bp
 from dotenv import load_dotenv
 from flask_cors import CORS
 
@@ -24,6 +25,7 @@ app.register_blueprint(usuario_bp, url_prefix="/usuarios")
 app.register_blueprint(reporte_bp, url_prefix="/reportes")
 app.register_blueprint(barcode_bp, url_prefix="/barcode")
 app.register_blueprint(categoria_bp, url_prefix="/categorias")
+app.register_blueprint(responsable_bp, url_prefix="/api")
 
 
 

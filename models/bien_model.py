@@ -235,15 +235,27 @@ class BienModel:
                 bien_id = cursor.lastrowid
 
                 # Registrar movimiento inicial
+                responsable_id = data.get("responsable_id")
                 responsable_nombre = data.get("responsable")
+                
+                # Si tenemos responsable_id, obtener el nombre desde la tabla responsables
+                if responsable_id and not responsable_nombre:
+                    cursor.execute(
+                        "SELECT nombre_normalizado FROM responsables WHERE id = %s",
+                        (responsable_id,)
+                    )
+                    resp_row = cursor.fetchone()
+                    if resp_row:
+                        responsable_nombre = resp_row['nombre_normalizado']
+                
                 ubicacion_nombre = data.get("ubicacion")
                 estado_bien = data.get("estado", "BUENO")
 
                 query_mov = """
                     INSERT INTO movimientos (
                         bien_id, tipo, fecha, ubicacion_actual, responsable, 
-                        modalidad_responsable, inventariador_id, observaciones, estado
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        responsable_id, modalidad_responsable, inventariador_id, observaciones, estado
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 
                 fecha_mov = data.get("fecha_asignacion")
@@ -256,6 +268,7 @@ class BienModel:
                     fecha_mov,
                     ubicacion_nombre,
                     responsable_nombre,
+                    responsable_id,
                     data.get("modalidad"),
                     data.get("inventariador_id"),
                     data.get("observacion"),

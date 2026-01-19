@@ -111,6 +111,19 @@ class MovimientoModel:
                 if not data.get("bien_id"):
                     return {"success": False, "error": "El bien_id es obligatorio"}
 
+                # Obtener nombre de responsable si tenemos responsable_id
+                responsable_id = data.get("responsable_id")
+                responsable_nombre = data.get("responsable") or data.get("responsable_nuevo")
+                
+                if responsable_id and not responsable_nombre:
+                    cursor.execute(
+                        "SELECT nombre_normalizado FROM responsables WHERE id = %s",
+                        (responsable_id,)
+                    )
+                    resp_row = cursor.fetchone()
+                    if resp_row:
+                        responsable_nombre = resp_row['nombre_normalizado']
+
                 query = """
                     INSERT INTO movimientos
                     (
@@ -118,7 +131,8 @@ class MovimientoModel:
                         tipo, 
                         fecha, 
                         ubicacion_actual, 
-                        responsable, 
+                        responsable,
+                        responsable_id,
                         modalidad_responsable,
                         inventariador_id,
                         documento_id,
@@ -126,7 +140,7 @@ class MovimientoModel:
                         estado
                     )
                     VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     );
                 """
 
@@ -144,7 +158,8 @@ class MovimientoModel:
                     data.get("tipo", "Asignación"),
                     data.get("fecha") or datetime.now().strftime("%Y-%m-%d"),
                     data.get("ubicacion_actual") or data.get("ubicacion_destino"),
-                    data.get("responsable") or data.get("responsable_nuevo"),
+                    responsable_nombre,
+                    responsable_id,
                     data.get("modalidad_responsable") or data.get("modalidad_responsable_nuevo") or data.get("modalidad"),
                     inventariador_id,
                     documento_id,
@@ -169,6 +184,19 @@ class MovimientoModel:
         try:
             conn = get_connection()
             with conn.cursor() as cursor:
+                # Obtener nombre de responsable si tenemos responsable_id
+                responsable_id = data.get("responsable_id")
+                responsable_nombre = data.get("responsable")
+                
+                if responsable_id and not responsable_nombre:
+                    cursor.execute(
+                        "SELECT nombre_normalizado FROM responsables WHERE id = %s",
+                        (responsable_id,)
+                    )
+                    resp_row = cursor.fetchone()
+                    if resp_row:
+                        responsable_nombre = resp_row['nombre_normalizado']
+
                 # Actualizar el registro
                 query = """
                     UPDATE movimientos SET
@@ -176,6 +204,7 @@ class MovimientoModel:
                         fecha = %s,
                         ubicacion_actual = %s,
                         responsable = %s,
+                        responsable_id = %s,
                         modalidad_responsable = %s,
                         inventariador_id = %s,
                         documento_id = %s,
@@ -196,7 +225,8 @@ class MovimientoModel:
                     data.get("tipo"),
                     data.get("fecha"),
                     data.get("ubicacion_actual"),
-                    data.get("responsable"),
+                    responsable_nombre,
+                    responsable_id,
                     data.get("modalidad_responsable"),
                     inventariador_id,
                     documento_id,
